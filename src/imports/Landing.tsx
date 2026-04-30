@@ -173,7 +173,7 @@ function PortfolioAboutSection() {
   return (
     <div className="bg-white content-stretch flex items-start justify-center overflow-clip py-[96px] relative shrink-0 w-full z-[3]" data-name="Portfolio About Section">
       <p className="flex-[1_0_0] font-['Shantell_Sans:Regular','Noto_Sans_KR:Regular',sans-serif] font-normal leading-[52px] max-w-[900px] min-h-px min-w-px relative text-[48px] text-[rgba(0,0,0,0.8)] text-center" style={{ fontVariationSettings: "'BNCE' 0, 'INFM' 0, 'SPAC' 0" }}>
-        디지털 경험을 디자인하고 혁신을 이끌어가는 UX/UI 디자이너입니다.
+        디지털 경험을 디자인하고 디자인 혁신을 이끌어가는 UX/UI 디자이너입니다.
       </p>
     </div>
   );
