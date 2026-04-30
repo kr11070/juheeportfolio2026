@@ -32,8 +32,8 @@ export function Navbar() {
 
   const navLinks = [
     { name: t('nav.home'), href: '/' },
-    { name: t('nav.portfolio'), href: '/#portfolio' },
     { name: t('nav.about'), href: '/#about' },
+    { name: t('nav.portfolio'), href: '/#portfolio' },
   ];
 
   return (

@@ -35,15 +35,19 @@ const getLocalizedValue = (val: any, currentLang: string) => {
   return val[currentLang] || val['KR'] || '';
 };
 
-// "2026.02 - 2026.04" 형식에서 YYYYMM 숫자를 추출. position: 'start' | 'end'
+// "2026.04.20" 또는 "2026.04.20 - 2026.04.17" 형식에서 YYYYMMDD 숫자를 추출
 function parseDateField(dateVal: any, lang: string, position: 'start' | 'end'): number {
   const str = getLocalizedValue(dateVal, lang);
   if (!str) return 0;
-  const parts = str.split('-').map((s: string) => s.trim());
+  const parts = str.split(/\s*[-~→]\s*/).map((s: string) => s.trim());
   const target = position === 'end' && parts.length > 1 ? parts[parts.length - 1] : parts[0];
-  const m = target.match(/(\d{4})[.\-/](\d{2})/);
-  if (!m) return 0;
-  return parseInt(m[1]) * 100 + parseInt(m[2]);
+  // YYYY.MM.DD
+  const full = target.match(/(\d{4})[.\-/](\d{2})[.\-/](\d{2})/);
+  if (full) return parseInt(full[1]) * 10000 + parseInt(full[2]) * 100 + parseInt(full[3]);
+  // YYYY.MM
+  const short = target.match(/(\d{4})[.\-/](\d{2})/);
+  if (short) return parseInt(short[1]) * 10000 + parseInt(short[2]) * 100;
+  return 0;
 }
 
 function ProjectCard({ 
@@ -200,7 +204,8 @@ export function PortfolioSection() {
   const [filterTeam, setFilterTeam] = useState<'ALL' | 'TEAM' | 'INDIVIDUAL'>('ALL');
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [filterYear, setFilterYear] = useState<string>('ALL');
-  const [sortBy, setSortBy] = useState<'NEWEST' | 'OLDEST' | 'TITLE'>('NEWEST');
+  const [sortBy, setSortBy] = useState<'NEWEST' | 'TITLE'>('NEWEST');
+  const [sortReverse, setSortReverse] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -411,26 +416,22 @@ export function PortfolioSection() {
 
     // Sorting
     result.sort((a, b) => {
+      let cmp = 0;
       if (sortBy === 'NEWEST') {
-        const da = parseDateField(a.date, lang, 'end') || a.createdAt;
-        const db = parseDateField(b.date, lang, 'end') || b.createdAt;
-        return db - da;
+        const da = parseDateField(a.date, lang, 'end');
+        const db = parseDateField(b.date, lang, 'end');
+        if (da > 0 && db > 0) cmp = db - da;
+        else if (da > 0) cmp = -1;
+        else if (db > 0) cmp = 1;
+        else cmp = b.createdAt - a.createdAt;
+      } else if (sortBy === 'TITLE') {
+        cmp = getLocalizedValue(a.title, lang).localeCompare(getLocalizedValue(b.title, lang));
       }
-      if (sortBy === 'OLDEST') {
-        const da = parseDateField(a.date, lang, 'start') || a.createdAt;
-        const db = parseDateField(b.date, lang, 'start') || b.createdAt;
-        return da - db;
-      }
-      if (sortBy === 'TITLE') {
-        const titleA = getLocalizedValue(a.title, lang);
-        const titleB = getLocalizedValue(b.title, lang);
-        return titleA.localeCompare(titleB);
-      }
-      return 0;
+      return sortReverse ? -cmp : cmp;
     });
 
     return result;
-  }, [projects, filterTeam, selectedKeywords, filterYear, sortBy, lang]);
+  }, [projects, filterTeam, selectedKeywords, filterYear, sortBy, sortReverse, lang]);
 
   const toggleKeyword = (kw: string) => {
     setSelectedKeywords(prev => 
@@ -518,14 +519,19 @@ export function PortfolioSection() {
               </select>
             </div>
             
-            <ArrowDownUp size={16} className="text-gray-400" />
+            <button
+              onClick={() => setSortReverse(prev => !prev)}
+              className={`p-1.5 rounded-lg transition-all ${sortReverse ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-gray-600'}`}
+              title={sortReverse ? '역순' : '정순'}
+            >
+              <ArrowDownUp size={16} className={`transition-transform duration-200 ${sortReverse ? 'rotate-180' : ''}`} />
+            </button>
             <select 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-gray-50 border-none px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-500/20 cursor-pointer"
             >
               <option value="NEWEST">{t('portfolio.sort.newest')}</option>
-              <option value="OLDEST">{t('portfolio.sort.oldest')}</option>
               <option value="TITLE">{t('portfolio.sort.title')}</option>
             </select>
           </div>
